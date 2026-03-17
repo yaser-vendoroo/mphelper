@@ -9,4 +9,5 @@ alwaysApply: true
 - **Purpose**: WO number helper on Vendoroo testing marketplace; JWT in GM storage, WO from URL UUID, API `api-testing-marketplace.vendoroo.ai/api/WorkOrder/{id}`.
 - **When editing**: Keep IIFE + strict mode; single self-contained file; preserve `@match` / `@connect` for testing env; UI uses `vendoroo-wo-helper-overlay` and floating button.
 - **Versioning**: Always update `@version` in the userscript header when changing behavior or UX; use rational increments (e.g. 1.1 for minor, 2.0 for major).
+- **Git commits**: Conventional Commits — `type(scope): subject` (e.g. `feat(mphelper): ...`), imperative present tense, optional body with bullets. Types: feat, fix, docs, chore, refactor, style.
 - **Details**: See `AGENTS.md` for API, storage key, and conventions.

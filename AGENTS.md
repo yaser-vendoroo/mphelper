@@ -22,6 +22,7 @@
 ## Conventions for edits
 
 - **Versioning**: Always care about versioning. Bump the `@version` in the userscript header when making user-facing or behavioral changes (e.g. new features, fixes, UI or API changes). Use rational increments (e.g. 1.0 → 1.1 for minor, 1.0 → 2.0 for major).
+- **Git commits**: Use [Conventional Commits](https://www.conventionalcommits.org/). Format: `type(scope): short subject` (e.g. `feat(mphelper): add X`, `fix(mphelper): correct Y`). Subject: imperative, present tense, ~50 chars; no period at end. Optional body: wrap at 72 chars; use bullets for multiple changes. Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `style`.
 - Keep the script **self-contained** in one file; no external deps.
 - Preserve the **IIFE** and `'use strict'`.
 - When changing **@match**, **@connect**, or API URLs, keep testing vs production clearly separated (this repo is for **testing** marketplace).
