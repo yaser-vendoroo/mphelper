@@ -17,7 +17,7 @@
 - **Greasemonkey/Tampermonkey**: `GM_setValue`, `GM_getValue`, `GM_xmlhttpRequest`.
 - **API**: `https://api-testing-marketplace.vendoroo.ai/api/WorkOrder/{workOrderId}` – GET, `Authorization: Bearer <jwt>`; response has `woNumber`.
 - **URL**: Work order ID is the UUID in the page URL (regex in script).
-- JWT is stored via `GM_setValue` under key `vendoroo_wo_helper_jwt`.
+- JWT is stored via `GM_setValue` under key `vendoroo_wo_helper_jwt`. The script **auto-captures** the JWT by intercepting `fetch` and `XMLHttpRequest`: any request to `api-testing-marketplace.vendoroo.ai` with an `Authorization: Bearer` header updates the stored token (runs at `document-start`).
 
 ## Conventions for edits
 
