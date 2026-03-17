@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         vtools
+// @name         MPHelper
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  Vendoroo Marketplace - WO Number Helper & tools
+// @description  MPHelper - Vendoroo Marketplace WO Number Helper & tools
 // @match        https://testing-marketplace.vendoroo.ai/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -60,8 +60,8 @@
 
     function createFloatingButton() {
         const btn = document.createElement('button');
-        btn.textContent = 'vtools';
-        btn.title = 'Vendoroo tools';
+        btn.textContent = 'MPHelper';
+        btn.title = 'Vendoroo Marketplace Helper';
         btn.style.cssText = `
             position: fixed;
             bottom: 24px;
@@ -105,7 +105,7 @@
         `;
 
         const title = document.createElement('h3');
-        title.textContent = 'vtools';
+        title.textContent = 'MPHelper';
         title.style.marginTop = '0';
 
         const jwtLabel = document.createElement('label');
