@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MPHelper
 // @namespace    http://tampermonkey.net/
-// @version      2.3.0
+// @version      2.4.0
 // @description  MPHelper - Vendoroo Marketplace WO Number Helper & tools
 // @match        https://testing-marketplace.vendoroo.ai/*
 // @match        https://marketplace.vendoroo.ai/*
@@ -11,6 +11,8 @@
 // @grant        GM_xmlhttpRequest
 // @connect      api-testing-marketplace.vendoroo.ai
 // @connect      api-marketplace.vendoroo.ai
+// @connect      fonts.googleapis.com
+// @connect      fonts.gstatic.com
 // ==/UserScript==
 
 (function() {
@@ -293,30 +295,202 @@
         return navigator.clipboard.writeText(text);
     }
 
-    const clickableRowStyle = 'margin-bottom: 12px;';
-    const clickableValueStyle = [
-        'cursor: pointer; display: inline-block; padding: 6px 12px; border-radius: 8px;',
-        'background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;',
-        'font-size: 13px; font-family: inherit;'
-    ].join(' ');
-    const clickableValueStyleHover = [
-        'cursor: pointer; display: inline-block; padding: 6px 12px; border-radius: 8px;',
-        'background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1;',
-        'font-size: 13px; font-family: inherit;'
-    ].join(' ');
+    function injectMaterialStyles() {
+        if (document.getElementById('vendoroo-mphelper-styles')) return;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap';
+        document.head.appendChild(link);
+        const style = document.createElement('style');
+        style.id = 'vendoroo-mphelper-styles';
+        style.textContent = `
+            #vendoroo-wo-helper-overlay, .vendoroo-mphelper-fab {
+                --md-sys-color-primary: #6750a4;
+                --md-sys-color-on-primary: #fff;
+                --md-sys-color-primary-container: #eaddff;
+                --md-sys-color-on-primary-container: #21005d;
+                --md-sys-color-surface: #fef7ff;
+                --md-sys-color-surface-dim: #ded8e1;
+                --md-sys-color-outline: #79747e;
+                --md-sys-color-outline-variant: #e7e0ec;
+                --md-elevation-1: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15);
+                --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.2);
+                --md-elevation-3: 0 4px 8px -2px rgba(0,0,0,.2), 0 2px 4px -2px rgba(0,0,0,.14);
+                --md-shape-full: 9999px;
+                --md-shape-extra-small: 4px;
+                --md-shape-small: 8px;
+                --md-shape-medium: 12px;
+                --md-shape-large: 16px;
+            }
+            .vendoroo-mphelper-fab {
+                font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 999999;
+                width: 56px;
+                height: 56px;
+                padding: 0;
+                border-radius: var(--md-shape-large);
+                border: none;
+                background: var(--md-sys-color-primary);
+                color: var(--md-sys-color-on-primary);
+                cursor: pointer;
+                box-shadow: var(--md-elevation-3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: box-shadow .2s, transform .1s;
+            }
+            .vendoroo-mphelper-fab:hover {
+                box-shadow: 0 6px 10px -2px rgba(0,0,0,.2), 0 3px 6px -2px rgba(0,0,0,.14);
+            }
+            .vendoroo-mphelper-fab:active {
+                transform: scale(0.98);
+            }
+            #vendoroo-wo-helper-overlay {
+                font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-dialog-scrim {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,.32);
+                z-index: 1000000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-dialog-surface {
+                background: var(--md-sys-color-surface, #fef7ff);
+                border-radius: 28px;
+                padding: 24px 24px 28px;
+                min-width: 360px;
+                max-width: 90vw;
+                box-shadow: var(--md-elevation-3, 0 4px 8px -2px rgba(0,0,0,.2));
+                position: relative;
+                z-index: 1000001;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-dialog-title {
+                margin: 0 0 20px;
+                font-size: 22px;
+                font-weight: 500;
+                letter-spacing: 0;
+                line-height: 28px;
+                color: rgba(0,0,0,.87);
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-row {
+                margin-bottom: 16px;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-row-label {
+                display: block;
+                font-size: 12px;
+                font-weight: 500;
+                letter-spacing: .5px;
+                color: rgba(0,0,0,.6);
+                margin-bottom: 4px;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-chip {
+                display: inline-block;
+                padding: 8px 16px;
+                border-radius: var(--md-shape-small, 8px);
+                background: var(--md-sys-color-primary-container, #eaddff);
+                color: var(--md-sys-color-on-primary-container, #21005d);
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                border: none;
+                transition: background .2s, box-shadow .15s;
+                box-shadow: none;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-chip:hover {
+                background: #d4c4ed;
+                box-shadow: var(--md-elevation-1, 0 1px 2px rgba(0,0,0,.3));
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-chip:active {
+                box-shadow: none;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-chip.vendoroo-chip-empty {
+                background: var(--md-sys-color-surface-dim, #eee);
+                color: rgba(0,0,0,.38);
+                cursor: default;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-chip.vendoroo-chip-empty:hover {
+                box-shadow: none;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-actions {
+                margin-top: 24px;
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-btn {
+                font-family: inherit;
+                font-size: 14px;
+                font-weight: 500;
+                letter-spacing: .1px;
+                padding: 10px 24px;
+                border-radius: var(--md-shape-full, 9999px);
+                border: none;
+                cursor: pointer;
+                transition: box-shadow .2s, background .2s;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-btn-filled {
+                background: var(--md-sys-color-primary, #6750a4);
+                color: var(--md-sys-color-on-primary, #fff);
+                box-shadow: var(--md-elevation-1, 0 1px 2px rgba(0,0,0,.3));
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-btn-filled:hover {
+                box-shadow: var(--md-elevation-2, 0 2px 6px 2px rgba(0,0,0,.15));
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-btn-text {
+                background: transparent;
+                color: var(--md-sys-color-primary, #6750a4);
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-btn-text:hover {
+                background: rgba(103,80,164,.08);
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-status {
+                margin-top: 8px;
+                font-size: 12px;
+                color: rgba(0,0,0,.6);
+                min-height: 20px;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-shortcut-row {
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-shortcut-label {
+                font-size: 14px;
+                font-weight: 500;
+                color: rgba(0,0,0,.87);
+            }
+            #vendoroo-wo-helper-overlay .vendoroo-shortcut-badge {
+                padding: 6px 12px;
+                border-radius: var(--md-shape-extra-small, 4px);
+                background: var(--md-sys-color-outline-variant, #e7e0ec);
+                font-size: 13px;
+                font-weight: 500;
+            }
+        `;
+        document.head.appendChild(style);
+    }
 
     function makeClickableRow(label, value, statusEl) {
         const wrap = document.createElement('div');
-        wrap.style.cssText = clickableRowStyle;
-        const labelSpan = document.createElement('span');
-        labelSpan.textContent = label + ': ';
-        labelSpan.style.fontWeight = '600';
+        wrap.className = 'vendoroo-row';
+        const labelEl = document.createElement('span');
+        labelEl.className = 'vendoroo-row-label';
+        labelEl.textContent = label;
         const valueSpan = document.createElement('span');
+        valueSpan.className = 'vendoroo-chip';
+        const isEmpty = value == null || value === '';
+        if (isEmpty) valueSpan.classList.add('vendoroo-chip-empty');
         valueSpan.textContent = value != null && value !== '' ? String(value) : '—';
-        valueSpan.style.cssText = clickableValueStyle;
-        valueSpan.title = 'Click to copy';
-        valueSpan.onmouseenter = () => { valueSpan.style.cssText = clickableValueStyleHover; };
-        valueSpan.onmouseleave = () => { valueSpan.style.cssText = clickableValueStyle; };
+        valueSpan.title = isEmpty ? '' : 'Click to copy';
         valueSpan.onclick = async () => {
             const text = valueSpan.textContent && valueSpan.textContent !== '—' && valueSpan.textContent !== 'Loading...' ? valueSpan.textContent : '';
             if (!text) return;
@@ -328,66 +502,39 @@
                 if (statusEl) statusEl.textContent = 'Copy failed';
             }
         };
-        wrap.append(labelSpan, valueSpan);
+        wrap.append(labelEl, valueSpan);
         return { wrap, valueSpan };
     }
 
-    const ICON_FLOAT = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
+    const ICON_FLOAT = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
 
     function createFloatingButton() {
         const btn = document.createElement('button');
+        btn.className = 'vendoroo-mphelper-fab';
         btn.innerHTML = ICON_FLOAT;
         btn.title = 'MPHelper – Vendoroo Marketplace Helper';
-        btn.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 999999;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            border-radius: 50%;
-            border: none;
-            background: #2563eb;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
         return btn;
     }
 
     function openDialog() {
+        injectMaterialStyles();
+
         const overlay = document.createElement('div');
         overlay.id = 'vendoroo-wo-helper-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
+
+        const scrim = document.createElement('div');
+        scrim.className = 'vendoroo-dialog-scrim';
 
         const dialog = document.createElement('div');
-        dialog.style.cssText = `
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            min-width: 360px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        `;
+        dialog.className = 'vendoroo-dialog-surface';
 
-        const title = document.createElement('h3');
+        const title = document.createElement('h2');
+        title.className = 'vendoroo-dialog-title';
         title.textContent = 'MPHelper';
-        title.style.marginTop = '0';
 
         const requestId = getWorkOrderIdFromUrl();
         const status = document.createElement('div');
-        status.style.cssText = 'margin-top: 8px; font-size: 13px; color: #666; min-height: 20px;';
+        status.className = 'vendoroo-status';
 
         const rowRequestId = makeClickableRow('Request ID', requestId, status);
         const rowTitle = makeClickableRow('Work order title', null, status);
@@ -396,15 +543,19 @@
         const rowResidentUserId = makeClickableRow('Resident user ID', null, status);
         if (requestId) {
             rowTitle.valueSpan.textContent = 'Loading...';
+            rowTitle.valueSpan.classList.remove('vendoroo-chip-empty');
             rowWorkOrderId.valueSpan.textContent = 'Loading...';
+            rowWorkOrderId.valueSpan.classList.remove('vendoroo-chip-empty');
             rowWoNumber.valueSpan.textContent = 'Loading...';
+            rowWoNumber.valueSpan.classList.remove('vendoroo-chip-empty');
             rowResidentUserId.valueSpan.textContent = 'Loading...';
+            rowResidentUserId.valueSpan.classList.remove('vendoroo-chip-empty');
         }
 
         let lastRawResponse = null;
         const copyApiResponseBtn = document.createElement('button');
-        copyApiResponseBtn.textContent = 'Copy API response';
-        copyApiResponseBtn.style.cssText = 'padding: 6px 12px; font-size: 13px; cursor: pointer;';
+        copyApiResponseBtn.className = 'vendoroo-btn vendoroo-btn-text';
+        copyApiResponseBtn.textContent = 'Copy API Response';
         copyApiResponseBtn.onclick = async () => {
             if (lastRawResponse == null) {
                 status.textContent = 'No API response yet — load a work order first';
@@ -421,16 +572,16 @@
         };
 
         const shortcutRow = document.createElement('div');
-        shortcutRow.style.cssText = 'margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
+        shortcutRow.className = 'vendoroo-shortcut-row';
         const shortcutLabel = document.createElement('span');
-        shortcutLabel.textContent = 'Shortcut: ';
-        shortcutLabel.style.fontWeight = '600';
+        shortcutLabel.className = 'vendoroo-shortcut-label';
+        shortcutLabel.textContent = 'Shortcut';
         const shortcutDisplay = document.createElement('span');
+        shortcutDisplay.className = 'vendoroo-shortcut-badge';
         shortcutDisplay.textContent = getStoredShortcut();
-        shortcutDisplay.style.cssText = 'padding: 4px 8px; background: #f1f5f9; border-radius: 6px; font-size: 13px;';
         const changeShortcutBtn = document.createElement('button');
+        changeShortcutBtn.className = 'vendoroo-btn vendoroo-btn-text';
         changeShortcutBtn.textContent = 'Change';
-        changeShortcutBtn.style.cssText = 'padding: 4px 10px; font-size: 12px; cursor: pointer;';
 
         function updateShortcutDisplay() {
             shortcutDisplay.textContent = getStoredShortcut();
@@ -460,53 +611,57 @@
         shortcutRow.append(shortcutLabel, shortcutDisplay, changeShortcutBtn);
 
         const buttonRow = document.createElement('div');
-        buttonRow.style.cssText = 'margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;';
+        buttonRow.className = 'vendoroo-actions';
         const closeBtn = document.createElement('button');
+        closeBtn.className = 'vendoroo-btn vendoroo-btn-filled';
         closeBtn.textContent = 'Close';
-        closeBtn.style.cssText = 'padding: 6px 16px;';
-        copyApiResponseBtn.style.marginLeft = '0';
         buttonRow.append(copyApiResponseBtn, closeBtn);
 
         function close() {
             overlay.remove();
         }
 
-        overlay.onclick = (e) => { if (e.target === overlay) close(); };
+        scrim.onclick = (e) => { if (e.target === scrim) close(); };
         closeBtn.onclick = close;
+
+        function setChip(el, text) {
+            const isEmpty = !text || text === '—';
+            el.textContent = text || '—';
+            if (isEmpty) el.classList.add('vendoroo-chip-empty');
+            else el.classList.remove('vendoroo-chip-empty');
+        }
 
         async function loadWorkOrder() {
             const workOrderId = getWorkOrderIdFromUrl();
             const jwt = getStoredJwt();
             if (!workOrderId) {
-                rowTitle.valueSpan.textContent = '—';
-                rowWorkOrderId.valueSpan.textContent = '—';
-                rowWoNumber.valueSpan.textContent = '—';
-                rowResidentUserId.valueSpan.textContent = '—';
+                setChip(rowTitle.valueSpan, '—');
+                setChip(rowWorkOrderId.valueSpan, '—');
+                setChip(rowWoNumber.valueSpan, '—');
+                setChip(rowResidentUserId.valueSpan, '—');
                 return;
             }
             if (!jwt) {
-                rowTitle.valueSpan.textContent = '—';
-                rowWorkOrderId.valueSpan.textContent = '—';
-                rowWoNumber.valueSpan.textContent = 'No token yet — use the site to load data';
-                rowResidentUserId.valueSpan.textContent = '—';
+                setChip(rowTitle.valueSpan, '—');
+                setChip(rowWorkOrderId.valueSpan, '—');
+                setChip(rowWoNumber.valueSpan, 'No token yet — use the site to load data');
+                setChip(rowResidentUserId.valueSpan, '—');
                 return;
             }
             try {
                 const data = await fetchWorkOrder(workOrderId, jwt);
                 lastRawResponse = data.rawResponse != null ? data.rawResponse : null;
-                rowTitle.valueSpan.textContent = data.title != null ? String(data.title) : '—';
+                setChip(rowTitle.valueSpan, data.title != null ? String(data.title) : null);
                 const idFromApi = data.workOrderId;
-                rowWorkOrderId.valueSpan.textContent =
-                    idFromApi != null && idFromApi !== '' ? String(idFromApi) : workOrderId;
-                rowWoNumber.valueSpan.textContent = data.woNumber != null ? String(data.woNumber) : '—';
-                rowResidentUserId.valueSpan.textContent =
-                    data.residentUserId != null ? String(data.residentUserId) : '—';
+                setChip(rowWorkOrderId.valueSpan, idFromApi != null && idFromApi !== '' ? String(idFromApi) : workOrderId);
+                setChip(rowWoNumber.valueSpan, data.woNumber != null ? String(data.woNumber) : null);
+                setChip(rowResidentUserId.valueSpan, data.residentUserId != null ? String(data.residentUserId) : null);
             } catch (e) {
                 lastRawResponse = null;
-                rowTitle.valueSpan.textContent = '—';
-                rowWorkOrderId.valueSpan.textContent = '—';
-                rowWoNumber.valueSpan.textContent = 'Error: ' + (e.message || 'Request failed');
-                rowResidentUserId.valueSpan.textContent = '—';
+                setChip(rowTitle.valueSpan, null);
+                setChip(rowWorkOrderId.valueSpan, null);
+                setChip(rowWoNumber.valueSpan, 'Error: ' + (e.message || 'Request failed'));
+                setChip(rowResidentUserId.valueSpan, null);
             }
         }
 
@@ -522,11 +677,13 @@
             buttonRow
         );
         loadWorkOrder();
-        overlay.appendChild(dialog);
+        scrim.appendChild(dialog);
+        overlay.appendChild(scrim);
         document.body.appendChild(overlay);
     }
 
     function initUI() {
+        injectMaterialStyles();
         const floatingBtn = createFloatingButton();
         floatingBtn.onclick = openDialog;
         floatingBtn.style.display = 'none'; // use shortcut only (e.g. Ctrl+Shift+M)
