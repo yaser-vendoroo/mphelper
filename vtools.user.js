@@ -1,31 +1,60 @@
 // ==UserScript==
 // @name         MPHelper
 // @namespace    http://tampermonkey.net/
-// @version      1.9
+// @version      2.3.0
 // @description  MPHelper - Vendoroo Marketplace WO Number Helper & tools
 // @match        https://testing-marketplace.vendoroo.ai/*
+// @match        https://marketplace.vendoroo.ai/*
 // @run-at       document-start
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
 // @connect      api-testing-marketplace.vendoroo.ai
+// @connect      api-marketplace.vendoroo.ai
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    const STORAGE_KEY = 'vendoroo_wo_helper_jwt';
+    const STORAGE_KEY_TESTING = 'vendoroo_wo_helper_jwt';
+    const STORAGE_KEY_PROD = 'vendoroo_wo_helper_jwt_prod';
     const SHORTCUT_STORAGE_KEY = 'vendoroo_mphelper_shortcut';
     const DEFAULT_SHORTCUT = 'Ctrl+Shift+M';
-    const API_BASE = 'https://api-testing-marketplace.vendoroo.ai';
     const WORK_ORDER_API_PATH = '/api/WorkOrder';
 
-    function getStoredJwt() {
-        return GM_getValue(STORAGE_KEY, '');
+    const HOST_TESTING = 'testing-marketplace.vendoroo.ai';
+    const HOST_PROD = 'marketplace.vendoroo.ai';
+    const API_ORIGIN_TESTING = 'api-testing-marketplace.vendoroo.ai';
+    const API_ORIGIN_PROD = 'api-marketplace.vendoroo.ai';
+
+    function isProductionMarketplace() {
+        return window.location.hostname === HOST_PROD;
     }
 
-    function setStoredJwt(jwt) {
-        GM_setValue(STORAGE_KEY, jwt);
+    function getEnvConfig() {
+        if (isProductionMarketplace()) {
+            return {
+                apiBase: 'https://' + API_ORIGIN_PROD,
+                apiOrigin: API_ORIGIN_PROD,
+                pageOrigin: 'https://' + HOST_PROD,
+                jwtKey: STORAGE_KEY_PROD
+            };
+        }
+        return {
+            apiBase: 'https://' + API_ORIGIN_TESTING,
+            apiOrigin: API_ORIGIN_TESTING,
+            pageOrigin: 'https://' + HOST_TESTING,
+            jwtKey: STORAGE_KEY_TESTING
+        };
+    }
+
+    function getStoredJwt() {
+        return GM_getValue(getEnvConfig().jwtKey, '');
+    }
+
+    function setStoredJwtForOrigin(apiOrigin, jwt) {
+        const key = apiOrigin === API_ORIGIN_PROD ? STORAGE_KEY_PROD : STORAGE_KEY_TESTING;
+        GM_setValue(key, jwt);
     }
 
     function getStoredShortcut() {
@@ -64,11 +93,17 @@
 
     }
 
-    const API_ORIGIN = 'api-testing-marketplace.vendoroo.ai';
-    function captureTokenFromAuthHeader(authHeader) {
+    function resolveApiOriginFromUrl(url) {
+        if (!url || typeof url !== 'string') return null;
+        if (url.includes(API_ORIGIN_PROD)) return API_ORIGIN_PROD;
+        if (url.includes(API_ORIGIN_TESTING)) return API_ORIGIN_TESTING;
+        return null;
+    }
+
+    function captureTokenFromAuthHeader(authHeader, apiOrigin) {
         if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
             const token = authHeader.slice(7).trim();
-            if (token.length > 0) setStoredJwt(token);
+            if (token.length > 0 && apiOrigin) setStoredJwtForOrigin(apiOrigin, token);
         }
     }
 
@@ -77,11 +112,12 @@
         if (origFetch) {
             window.fetch = function(input, init) {
                 const url = typeof input === 'string' ? input : (input && input.url);
-                if (url && url.includes(API_ORIGIN)) {
+                const apiOrigin = resolveApiOriginFromUrl(url);
+                if (apiOrigin) {
                     const headers = init && init.headers;
                     if (headers) {
                         const auth = headers instanceof Headers ? headers.get('authorization') : (headers.Authorization || headers.authorization);
-                        captureTokenFromAuthHeader(auth);
+                        captureTokenFromAuthHeader(auth, apiOrigin);
                     }
                 }
                 return origFetch.apply(this, arguments);
@@ -100,8 +136,9 @@
             return origSetRequestHeader.apply(this, arguments);
         };
         XHR.send = function(body) {
-            if (this._mpHelperUrl && this._mpHelperUrl.includes(API_ORIGIN) && this._mpHelperAuth) {
-                captureTokenFromAuthHeader(this._mpHelperAuth);
+            const apiOrigin = resolveApiOriginFromUrl(this._mpHelperUrl);
+            if (apiOrigin && this._mpHelperAuth) {
+                captureTokenFromAuthHeader(this._mpHelperAuth, apiOrigin);
             }
             return origSend.apply(this, arguments);
         };
@@ -153,12 +190,71 @@
         return null;
     }
 
+    /** Work order entity id from API (key name varies); used with URL UUID as fallback. */
+    function getWorkOrderIdFromPayload(data) {
+        if (data == null || typeof data !== 'object') return null;
+        const candidates = [
+            data.workOrderId,
+            data.WorkOrderId,
+            data.work_order_id,
+            data.id,
+            data.Id,
+            data.ID,
+            data.requestId,
+            data.RequestId,
+            data.guid,
+            data.Guid,
+            data.uuid,
+            data.Uuid
+        ];
+        if (data.data && typeof data.data === 'object') {
+            const d = data.data;
+            candidates.push(
+                d.workOrderId, d.WorkOrderId, d.work_order_id,
+                d.id, d.Id, d.requestId, d.RequestId, d.guid, d.Guid
+            );
+        }
+        for (const v of candidates) {
+            if (v != null && String(v).trim() !== '') return String(v).trim();
+        }
+        return null;
+    }
+
+    /** Resident user id from API (e.g. data.aiResidentComData.resident.userId). */
+    function getResidentUserIdFromPayload(data) {
+        if (data == null || typeof data !== 'object') return null;
+        const candidates = [
+            data.residentUserId,
+            data.resident_user_id,
+            data.ResidentUserId
+        ];
+        const inner = data.data && typeof data.data === 'object' ? data.data : null;
+        if (inner) {
+            candidates.push(inner.residentUserId, inner.resident_user_id, inner.ResidentUserId);
+            const arc = inner.aiResidentComData;
+            if (arc && arc.resident && arc.resident.userId != null) {
+                candidates.push(arc.resident.userId);
+            }
+        }
+        const arc = data.aiResidentComData;
+        if (arc && arc.resident && arc.resident.userId != null) {
+            candidates.push(arc.resident.userId);
+        }
+        for (const v of candidates) {
+            if (v != null && String(v).trim() !== '') return String(v).trim();
+        }
+        return null;
+    }
+
     function getWorkOrderApiUrl(workOrderId) {
-        return workOrderId ? `${API_BASE}${WORK_ORDER_API_PATH}/${workOrderId}` : `${API_BASE}${WORK_ORDER_API_PATH}/{id}`;
+        const base = getEnvConfig().apiBase;
+        return workOrderId ? `${base}${WORK_ORDER_API_PATH}/${workOrderId}` : `${base}${WORK_ORDER_API_PATH}/{id}`;
     }
 
     function fetchWorkOrder(workOrderId, jwt) {
+        const cfg = getEnvConfig();
         const url = getWorkOrderApiUrl(workOrderId);
+        const page = cfg.pageOrigin;
         return new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
                 method: 'GET',
@@ -166,8 +262,8 @@
                 headers: {
                     'accept': 'application/json',
                     'authorization': `Bearer ${jwt}`,
-                    'origin': 'https://testing-marketplace.vendoroo.ai',
-                    'referer': 'https://testing-marketplace.vendoroo.ai/'
+                    'origin': page,
+                    'referer': page + '/'
                 },
                 onload: (res) => {
                     try {
@@ -179,7 +275,10 @@
                         const data = JSON.parse(res.responseText);
                         resolve({
                             woNumber: getWoNumberFromPayload(data),
-                            title: getTitleFromPayload(data)
+                            title: getTitleFromPayload(data),
+                            workOrderId: getWorkOrderIdFromPayload(data),
+                            residentUserId: getResidentUserIdFromPayload(data),
+                            rawResponse: res.responseText
                         });
                     } catch (e) {
                         reject(e);
@@ -292,11 +391,34 @@
 
         const rowRequestId = makeClickableRow('Request ID', requestId, status);
         const rowTitle = makeClickableRow('Work order title', null, status);
+        const rowWorkOrderId = makeClickableRow('Work order ID', null, status);
         const rowWoNumber = makeClickableRow('Work order number', null, status);
+        const rowResidentUserId = makeClickableRow('Resident user ID', null, status);
         if (requestId) {
             rowTitle.valueSpan.textContent = 'Loading...';
+            rowWorkOrderId.valueSpan.textContent = 'Loading...';
             rowWoNumber.valueSpan.textContent = 'Loading...';
+            rowResidentUserId.valueSpan.textContent = 'Loading...';
         }
+
+        let lastRawResponse = null;
+        const copyApiResponseBtn = document.createElement('button');
+        copyApiResponseBtn.textContent = 'Copy API response';
+        copyApiResponseBtn.style.cssText = 'padding: 6px 12px; font-size: 13px; cursor: pointer;';
+        copyApiResponseBtn.onclick = async () => {
+            if (lastRawResponse == null) {
+                status.textContent = 'No API response yet — load a work order first';
+                setTimeout(() => { status.textContent = ''; }, 2500);
+                return;
+            }
+            try {
+                await copyToClipboard(lastRawResponse);
+                status.textContent = 'API response copied to clipboard';
+                setTimeout(() => { status.textContent = ''; }, 2000);
+            } catch (e) {
+                status.textContent = 'Copy failed';
+            }
+        };
 
         const shortcutRow = document.createElement('div');
         shortcutRow.style.cssText = 'margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
@@ -337,9 +459,13 @@
         changeShortcutBtn.onclick = startRecordingShortcut;
         shortcutRow.append(shortcutLabel, shortcutDisplay, changeShortcutBtn);
 
+        const buttonRow = document.createElement('div');
+        buttonRow.style.cssText = 'margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;';
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
-        closeBtn.style.cssText = 'margin-top: 12px; padding: 6px 16px;';
+        closeBtn.style.cssText = 'padding: 6px 16px;';
+        copyApiResponseBtn.style.marginLeft = '0';
+        buttonRow.append(copyApiResponseBtn, closeBtn);
 
         function close() {
             overlay.remove();
@@ -353,21 +479,34 @@
             const jwt = getStoredJwt();
             if (!workOrderId) {
                 rowTitle.valueSpan.textContent = '—';
+                rowWorkOrderId.valueSpan.textContent = '—';
                 rowWoNumber.valueSpan.textContent = '—';
+                rowResidentUserId.valueSpan.textContent = '—';
                 return;
             }
             if (!jwt) {
                 rowTitle.valueSpan.textContent = '—';
+                rowWorkOrderId.valueSpan.textContent = '—';
                 rowWoNumber.valueSpan.textContent = 'No token yet — use the site to load data';
+                rowResidentUserId.valueSpan.textContent = '—';
                 return;
             }
             try {
                 const data = await fetchWorkOrder(workOrderId, jwt);
+                lastRawResponse = data.rawResponse != null ? data.rawResponse : null;
                 rowTitle.valueSpan.textContent = data.title != null ? String(data.title) : '—';
+                const idFromApi = data.workOrderId;
+                rowWorkOrderId.valueSpan.textContent =
+                    idFromApi != null && idFromApi !== '' ? String(idFromApi) : workOrderId;
                 rowWoNumber.valueSpan.textContent = data.woNumber != null ? String(data.woNumber) : '—';
+                rowResidentUserId.valueSpan.textContent =
+                    data.residentUserId != null ? String(data.residentUserId) : '—';
             } catch (e) {
+                lastRawResponse = null;
                 rowTitle.valueSpan.textContent = '—';
+                rowWorkOrderId.valueSpan.textContent = '—';
                 rowWoNumber.valueSpan.textContent = 'Error: ' + (e.message || 'Request failed');
+                rowResidentUserId.valueSpan.textContent = '—';
             }
         }
 
@@ -375,10 +514,12 @@
             title,
             rowRequestId.wrap,
             rowTitle.wrap,
+            rowWorkOrderId.wrap,
             rowWoNumber.wrap,
+            rowResidentUserId.wrap,
             shortcutRow,
             status,
-            closeBtn
+            buttonRow
         );
         loadWorkOrder();
         overlay.appendChild(dialog);
