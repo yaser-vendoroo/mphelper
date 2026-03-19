@@ -24,7 +24,7 @@
 - **Versioning**: **[Semantic versioning](https://semver.org/)** — `@version` must be `MAJOR.MINOR.PATCH` (three numeric parts). **PATCH** ↑ for bug fixes; **MINOR** ↑ for backward-compatible features or UX; **MAJOR** ↑ for incompatible behavior changes.
 - **Git commits**: Use conventional commit format:
   - **Format**: Short summary line, then optional bullet list (past tense). Reference related tickets if applicable.
-  - **Subject**: `type(scope): short summary` — imperative mood ("Add feature" not "Added feature"), first line max 72 characters, specific and descriptive. Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `style`.
+  - **Subject**: `type: short summary` — imperative mood ("Add feature" not "Added feature"), first line max 72 characters, specific and descriptive. Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `style`.
   - **Body**: Bullet points in **past tense** (e.g. "Implemented X", "Added Y"). Wrap at 72 chars.
   - **Example**:
     ```
