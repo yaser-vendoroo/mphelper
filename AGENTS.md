@@ -21,8 +21,9 @@
 
 ## Conventions for edits
 
-- **Versioning**: **[Semantic versioning](https://semver.org/)** — `@version` must be `MAJOR.MINOR.PATCH` (three numeric parts). **PATCH** ↑ for bug fixes; **MINOR** ↑ for backward-compatible features or UX; **MAJOR** ↑ for incompatible behavior changes.
-- **Git commits**: Use conventional commit format:
+- **Versioning**: **[Semantic versioning](https://semver.org/)** — `@version` must be `MAJOR.MINOR.PATCH` (three numeric parts). **PATCH** ↑ for bug fixes; **MINOR** ↑ for backward-compatible features or UX; **MAJOR** ↑ for incompatible behavior changes. **Always** bump `@version` in `vtools.user.js` when the change is substantive, using the rules above.
+- **Side effects / regressions**: Keep changes scoped; avoid breaking existing features (JWT auto-capture, MPHelper dialog and shortcut, work order API copy rows, image-analysis copy buttons, etc.). When touching shared helpers or globals, consider impact on all call sites.
+- **Git commits**: **Do not commit** unless the user explicitly asks. When they ask, use conventional commit format:
   - **Format**: Short summary line, then optional bullet list (past tense). Reference related tickets if applicable.
   - **Subject**: `type: short summary` — imperative mood ("Add feature" not "Added feature"), first line max 72 characters, specific and descriptive. Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `style`.
   - **Body**: Bullet points in **past tense** (e.g. "Implemented X", "Added Y"). Wrap at 72 chars.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MPHelper
 // @namespace    http://tampermonkey.net/
-// @version      2.4.0
+// @version      2.7.0
 // @description  MPHelper - Vendoroo Marketplace WO Number Helper & tools
 // @match        https://testing-marketplace.vendoroo.ai/*
 // @match        https://marketplace.vendoroo.ai/*
@@ -21,6 +21,7 @@
     const STORAGE_KEY_TESTING = 'vendoroo_wo_helper_jwt';
     const STORAGE_KEY_PROD = 'vendoroo_wo_helper_jwt_prod';
     const SHORTCUT_STORAGE_KEY = 'vendoroo_mphelper_shortcut';
+    const IMAGE_ANALYSIS_COPY_STORAGE_KEY = 'vendoroo_mphelper_image_analysis_copy_enabled';
     const DEFAULT_SHORTCUT = 'Ctrl+Shift+M';
     const WORK_ORDER_API_PATH = '/api/WorkOrder';
 
@@ -64,6 +65,12 @@
     }
     function setStoredShortcut(combo) {
         GM_setValue(SHORTCUT_STORAGE_KEY, combo);
+    }
+    function getImageAnalysisCopyEnabled() {
+        return GM_getValue(IMAGE_ANALYSIS_COPY_STORAGE_KEY, false) === true;
+    }
+    function setImageAnalysisCopyEnabled(enabled) {
+        GM_setValue(IMAGE_ANALYSIS_COPY_STORAGE_KEY, !!enabled);
     }
     function parseShortcut(combo) {
         const parts = String(combo).split('+').map(p => p.trim()).filter(Boolean);
@@ -295,6 +302,298 @@
         return navigator.clipboard.writeText(text);
     }
 
+    const IMAGE_REVIEW_TASKS_AND_DESC = `Tasks:
+1) Rate how accurate and complete the description is compared to what you see in the image, on a scale of 1–10 (10 = fully accurate and complete).
+2) Give a short bullet list: what matches the image, what is missing or wrong, and any overclaims.
+
+Automated description:
+---
+`;
+
+    const IMAGE_REVIEW_PROMPT_SEPARATE = `You are reviewing a resident-submitted maintenance photo and an automated image description (from another system).
+
+I pasted the photo and this text as two separate clipboard pastes — use the image from the other paste in this same chat together with the automated description below.
+
+` + IMAGE_REVIEW_TASKS_AND_DESC;
+
+    const IMAGE_REVIEW_PROMPT_COMBINED = `You are reviewing a resident-submitted maintenance photo and an automated image description (from another system).
+
+This paste may include both the photo and the text below in one clipboard entry — use the image together with the automated description.
+
+` + IMAGE_REVIEW_TASKS_AND_DESC;
+
+    const IMAGE_REVIEW_PROMPT_SUFFIX = `
+---
+
+Respond in this shape:
+Score: X/10
+- bullet
+- bullet
+`;
+
+    function buildImageReviewClipboardText(analysisText, imageLabel, combinedPaste) {
+        const body = (analysisText || '').trim() || '(no analysis text found)';
+        const label = imageLabel ? `Image file name: ${imageLabel}\n\n` : '';
+        const head = combinedPaste ? IMAGE_REVIEW_PROMPT_COMBINED : IMAGE_REVIEW_PROMPT_SEPARATE;
+        return label + head + body + IMAGE_REVIEW_PROMPT_SUFFIX;
+    }
+
+    function parseContentTypeFromGmHeaders(headers) {
+        if (!headers || typeof headers !== 'string') return '';
+        const lines = headers.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            const m = lines[i].match(/^content-type:\s*(.+)$/i);
+            if (m) return m[1].split(';')[0].trim().toLowerCase();
+        }
+        return '';
+    }
+
+    function inferImageMimeFromUrl(url) {
+        const u = String(url || '').toLowerCase();
+        if (u.includes('.png')) return 'image/png';
+        if (u.includes('.webp')) return 'image/webp';
+        if (u.includes('.gif')) return 'image/gif';
+        return 'image/jpeg';
+    }
+
+    /** Tampermonkey: arraybuffer + Content-Type is more reliable than responseType blob. */
+    function fetchUrlAsImageBlob(url) {
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url,
+                responseType: 'arraybuffer',
+                onload: (res) => {
+                    if (res.status < 200 || res.status >= 300) {
+                        reject(new Error(`HTTP ${res.status}`));
+                        return;
+                    }
+                    const buf = res.response;
+                    if (!buf || buf.byteLength === 0) {
+                        reject(new Error('Empty image'));
+                        return;
+                    }
+                    let ct = parseContentTypeFromGmHeaders(res.responseHeaders);
+                    if (!ct || ct === 'application/octet-stream') {
+                        ct = inferImageMimeFromUrl(url);
+                    }
+                    resolve(new Blob([buf], { type: ct }));
+                },
+                onerror: () => reject(new Error('Network error')),
+                ontimeout: () => reject(new Error('Timeout'))
+            });
+        });
+    }
+
+    function normalizeImageBlobType(blob, urlHint) {
+        let t = blob.type && String(blob.type).toLowerCase().split(';')[0].trim();
+        if (t === 'image/jpeg' || t === 'image/jpg' || t === 'image/png' || t === 'image/gif' || t === 'image/webp') {
+            if (t === 'image/jpg') t = 'image/jpeg';
+            return t === blob.type ? blob : blob.slice(0, blob.size, t);
+        }
+        const u = (urlHint || '').toLowerCase();
+        if (u.includes('.png')) return blob.slice(0, blob.size, 'image/png');
+        if (u.includes('.webp')) return blob.slice(0, blob.size, 'image/webp');
+        if (u.includes('.gif')) return blob.slice(0, blob.size, 'image/gif');
+        return blob.slice(0, blob.size, 'image/jpeg');
+    }
+
+    /** Clipboard API expects IANA names; image/jpg is invalid. Only png/jpeg are widely writable. */
+    function mimeForClipboardWrite(blobType) {
+        const t = (blobType || '').toLowerCase().split(';')[0].trim();
+        if (t === 'image/jpg' || t === 'image/pjpeg') return 'image/jpeg';
+        if (t === 'image/jpeg' || t === 'image/png') return t;
+        return null;
+    }
+
+    async function blobToPngForClipboard(blob) {
+        const bmp = await createImageBitmap(blob);
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = bmp.width;
+            canvas.height = bmp.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bmp, 0, 0);
+            return await new Promise((resolve, reject) => {
+                canvas.toBlob((b) => {
+                    if (b && b.size > 0) resolve(b);
+                    else reject(new Error('PNG encode failed'));
+                }, 'image/png');
+            });
+        } finally {
+            bmp.close();
+        }
+    }
+
+    async function getClipboardReadyImage(img) {
+        const src = img.currentSrc || img.src;
+        if (!src) throw new Error('No image URL');
+        const rawBlob = await fetchUrlAsImageBlob(src);
+        let imageBlob = normalizeImageBlobType(rawBlob, src);
+        let writeMime = mimeForClipboardWrite(imageBlob.type);
+        if (!writeMime) {
+            imageBlob = await blobToPngForClipboard(imageBlob);
+            writeMime = 'image/png';
+        }
+        return { imageBlob, writeMime };
+    }
+
+    /**
+     * One ClipboardItem with image + text/plain (some apps still paste only text).
+     * Falls back to text-only if combined write fails.
+     */
+    async function copyImageAndPromptCombined(img, analysisText) {
+        const alt = img.getAttribute('alt') || '';
+        const textCombined = buildImageReviewClipboardText(analysisText, alt, true);
+        const textBlob = new Blob([textCombined], { type: 'text/plain;charset=utf-8' });
+        const textSeparate = buildImageReviewClipboardText(analysisText, alt, false);
+
+        if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+            await copyToClipboard(textSeparate);
+            return { mode: 'text-only', reason: 'clipboard-api' };
+        }
+
+        let imageBlob;
+        let writeMime;
+        try {
+            ({ imageBlob, writeMime } = await getClipboardReadyImage(img));
+        } catch (fetchErr) {
+            await copyToClipboard(textSeparate);
+            return { mode: 'text-only', reason: 'image-fetch' };
+        }
+
+        const writeCombined = (ib, mime) =>
+            navigator.clipboard.write([
+                new ClipboardItem({
+                    [mime]: Promise.resolve(ib),
+                    'text/plain': Promise.resolve(textBlob)
+                })
+            ]);
+
+        try {
+            await writeCombined(imageBlob, writeMime);
+            return { mode: 'combined' };
+        } catch (firstErr) {
+            if (writeMime !== 'image/png') {
+                try {
+                    const pngBlob = await blobToPngForClipboard(imageBlob);
+                    await writeCombined(pngBlob, 'image/png');
+                    return { mode: 'combined' };
+                } catch (pngErr) {
+                    /* fall through */
+                }
+            }
+            try {
+                await copyToClipboard(textSeparate);
+                return { mode: 'text-only', reason: 'combined-write' };
+            } catch (textErr) {
+                throw textErr;
+            }
+        }
+    }
+
+    function findAnalysisTextForRequestImage(img) {
+        let row = img.closest('div.flex');
+        if (!row) return '';
+        let p = row.querySelector('p');
+        if (p && p.textContent) return p.textContent.trim();
+        const aside = row.querySelector('.float-right');
+        if (aside) {
+            p = aside.querySelector('p');
+            if (p && p.textContent) return p.textContent.trim();
+        }
+        return '';
+    }
+
+    function markInjected(el) {
+        el.setAttribute('data-mphelper-image-copy', '1');
+    }
+    function isInjected(el) {
+        return el.getAttribute('data-mphelper-image-copy') === '1';
+    }
+
+    function removeImageAnalysisCopyUI() {
+        document.querySelectorAll('.vendoroo-mphelper-image-analysis-actions').forEach((el) => el.remove());
+        document.querySelectorAll('img[data-mphelper-image-copy="1"]').forEach((im) => im.removeAttribute('data-mphelper-image-copy'));
+    }
+
+    function injectImageAnalysisCopyButton(img) {
+        if (!getImageAnalysisCopyEnabled()) return;
+        if (!img || img.tagName !== 'IMG' || isInjected(img)) return;
+        const row = img.closest('div.flex');
+        if (!row) return;
+
+        markInjected(img);
+        const wrap = document.createElement('div');
+        wrap.className = 'vendoroo-mphelper-image-analysis-actions';
+
+        const defaultLabel = 'Copy for AI review';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'vendoroo-mphelper-image-analysis-copy';
+        btn.textContent = defaultLabel;
+        btn.title = 'Copy image and LLM prompt together (one clipboard entry; some apps paste only text)';
+
+        let resetTimer = null;
+        function flash(className, label, ms) {
+            btn.classList.remove('vendoroo-mphelper-copy-done', 'vendoroo-mphelper-copy-fail');
+            if (className) btn.classList.add(className);
+            btn.textContent = label;
+            if (resetTimer) clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                btn.classList.remove('vendoroo-mphelper-copy-done', 'vendoroo-mphelper-copy-fail');
+                btn.textContent = defaultLabel;
+            }, ms);
+        }
+
+        btn.addEventListener('click', async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const analysis = findAnalysisTextForRequestImage(img);
+            btn.disabled = true;
+            try {
+                const result = await copyImageAndPromptCombined(img, analysis);
+                if (result.mode === 'combined') {
+                    flash('vendoroo-mphelper-copy-done', 'Copied (image + text)', 2400);
+                } else {
+                    flash('vendoroo-mphelper-copy-done', 'Copied text only', 3200);
+                }
+            } catch (err) {
+                flash('vendoroo-mphelper-copy-fail', 'Copy failed', 2500);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        wrap.appendChild(btn);
+        row.appendChild(wrap);
+    }
+
+    function scanImageAnalysisCopyTargets() {
+        if (!getImageAnalysisCopyEnabled()) {
+            removeImageAnalysisCopyUI();
+            return;
+        }
+        document.querySelectorAll('img[data-id="request-files-image"]').forEach(injectImageAnalysisCopyButton);
+    }
+
+    let imageAnalysisScanScheduled = false;
+    function scheduleImageAnalysisScan() {
+        if (imageAnalysisScanScheduled) return;
+        imageAnalysisScanScheduled = true;
+        requestAnimationFrame(() => {
+            imageAnalysisScanScheduled = false;
+            scanImageAnalysisCopyTargets();
+        });
+    }
+
+    function installImageAnalysisCopyObserver() {
+        if (!document.body) return;
+        scanImageAnalysisCopyTargets();
+        const obs = new MutationObserver(() => scheduleImageAnalysisScan());
+        obs.observe(document.body, { childList: true, subtree: true });
+    }
+
     function injectMaterialStyles() {
         if (document.getElementById('vendoroo-mphelper-styles')) return;
         const link = document.createElement('link');
@@ -475,6 +774,45 @@
                 font-size: 13px;
                 font-weight: 500;
             }
+            .vendoroo-mphelper-image-analysis-actions {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+                flex-shrink: 0;
+                align-self: flex-start;
+                margin-left: auto;
+            }
+            .vendoroo-mphelper-image-analysis-copy {
+                font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                padding: 6px 12px;
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--md-sys-color-primary, #6750a4);
+                background: rgba(103, 80, 164, 0.08);
+                border: 1px solid rgba(103, 80, 164, 0.35);
+                border-radius: var(--md-shape-small, 8px);
+                cursor: pointer;
+                transition: background .15s, box-shadow .15s;
+                white-space: nowrap;
+            }
+            .vendoroo-mphelper-image-analysis-copy:hover {
+                background: rgba(103, 80, 164, 0.14);
+                box-shadow: var(--md-elevation-1, 0 1px 2px rgba(0,0,0,.2));
+            }
+            .vendoroo-mphelper-image-analysis-copy:active {
+                transform: scale(0.98);
+            }
+            .vendoroo-mphelper-image-analysis-copy.vendoroo-mphelper-copy-done {
+                color: #1b5e20;
+                border-color: #a5d6a7;
+                background: #e8f5e9;
+            }
+            .vendoroo-mphelper-image-analysis-copy.vendoroo-mphelper-copy-fail {
+                color: #b71c1c;
+                border-color: #ef9a9a;
+                background: #ffebee;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -610,6 +948,35 @@
         changeShortcutBtn.onclick = startRecordingShortcut;
         shortcutRow.append(shortcutLabel, shortcutDisplay, changeShortcutBtn);
 
+        const imageCopyRow = document.createElement('div');
+        imageCopyRow.className = 'vendoroo-shortcut-row';
+        const imageCopyLabel = document.createElement('span');
+        imageCopyLabel.className = 'vendoroo-shortcut-label';
+        imageCopyLabel.textContent = 'Image analysis copy';
+        const imageCopyToggle = document.createElement('button');
+        imageCopyToggle.type = 'button';
+        imageCopyToggle.className = 'vendoroo-btn vendoroo-btn-text';
+        imageCopyToggle.setAttribute('role', 'switch');
+        function syncImageCopyToggle() {
+            const on = getImageAnalysisCopyEnabled();
+            imageCopyToggle.textContent = on ? 'On' : 'Off';
+            imageCopyToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+        }
+        syncImageCopyToggle();
+        imageCopyToggle.onclick = () => {
+            const next = !getImageAnalysisCopyEnabled();
+            setImageAnalysisCopyEnabled(next);
+            syncImageCopyToggle();
+            if (next) {
+                scheduleImageAnalysisScan();
+            } else {
+                removeImageAnalysisCopyUI();
+            }
+            status.textContent = next ? 'Image analysis copy enabled' : 'Image analysis copy disabled';
+            setTimeout(() => { status.textContent = ''; }, 2000);
+        };
+        imageCopyRow.append(imageCopyLabel, imageCopyToggle);
+
         const buttonRow = document.createElement('div');
         buttonRow.className = 'vendoroo-actions';
         const closeBtn = document.createElement('button');
@@ -673,6 +1040,7 @@
             rowWoNumber.wrap,
             rowResidentUserId.wrap,
             shortcutRow,
+            imageCopyRow,
             status,
             buttonRow
         );
@@ -684,6 +1052,7 @@
 
     function initUI() {
         injectMaterialStyles();
+        installImageAnalysisCopyObserver();
         const floatingBtn = createFloatingButton();
         floatingBtn.onclick = openDialog;
         floatingBtn.style.display = 'none'; // use shortcut only (e.g. Ctrl+Shift+M)
