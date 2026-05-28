@@ -1,0 +1,242 @@
+:root {
+    color-scheme: light;
+    --color-bg: #fbfbfd;
+    --color-surface: #ffffff;
+    --color-text: #1f2937;
+    --color-muted: #667085;
+    --color-border: #d9dee8;
+    --color-primary: #6750a4;
+    --color-primary-hover: #5a4596;
+    --color-primary-soft: #ede7f6;
+    --color-shadow: 0 12px 32px rgba(16, 24, 40, .14);
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-width: 340px;
+}
+
+body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+h1,
+h2,
+p {
+    margin: 0;
+}
+
+h1 {
+    font-size: 22px;
+    font-weight: 650;
+    letter-spacing: 0;
+}
+
+h2 {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0;
+}
+
+button {
+    min-height: 36px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    padding: 0 14px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+select {
+    min-height: 36px;
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0 32px 0 10px;
+    background: #ffffff;
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+}
+
+button:disabled {
+    cursor: wait;
+    opacity: .68;
+}
+
+button:focus-visible,
+select:focus-visible {
+    outline: 3px solid rgba(103, 80, 164, .24);
+    outline-offset: 2px;
+}
+
+.container {
+    width: 340px;
+    padding: 16px;
+    box-shadow: var(--color-shadow);
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.gap-1 {
+    gap: 2px;
+}
+
+.panel {
+    padding: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.cluster {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+}
+
+.field label {
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.setting-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.setting-title {
+    display: block;
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.shortcut-builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr .8fr;
+    gap: 8px;
+    align-items: end;
+}
+
+.primary {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.primary:hover {
+    background: var(--color-primary-hover);
+}
+
+.secondary {
+    background: #ffffff;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.secondary:hover {
+    background: #f5f7fb;
+}
+
+.final-key {
+    width: 100%;
+    background: var(--color-primary-soft);
+    border-color: rgba(103, 80, 164, .22);
+    color: #35205f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.final-key.recording {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.switch {
+    position: relative;
+    min-width: 58px;
+    border-color: var(--color-border);
+    background: #ffffff;
+    color: var(--color-muted);
+}
+
+.switch[aria-checked="true"] {
+    border-color: rgba(103, 80, 164, .32);
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.eyebrow {
+    color: var(--color-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.muted {
+    color: var(--color-muted);
+    font-size: 12px;
+}
+
+.kbd {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    padding: 6px 10px;
+    background: var(--color-primary-soft);
+    border: 1px solid rgba(103, 80, 164, .22);
+    border-radius: 6px;
+    color: #35205f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.status {
+    min-height: 18px;
+    color: var(--color-muted);
+    font-size: 12px;
+}
+
+.version-tag {
+    margin-left: 6px;
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .2px;
+    vertical-align: middle;
+}

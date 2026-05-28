@@ -9,3 +9,9 @@ Thumbs.db
 *.log
 *.tmp
 .cache/
+
+# Node
+node_modules/
+
+# Build output
+dist/

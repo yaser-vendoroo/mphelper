@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MPHelper</title>
+    <link rel="stylesheet" href="mphelper-lite.css">
+</head>
+<body>
+    <main class="container stack">
+        <header class="stack gap-1">
+            <p class="eyebrow">Vendoroo Marketplace Helper</p>
+            <h1>MPHelper <small id="appVersion" class="version-tag" title="MPHelper version"></small></h1>
+        </header>
+
+        <section class="panel stack" aria-labelledby="features-title">
+            <div class="split">
+                <div>
+                    <h2 id="features-title">Page Tools</h2>
+                    <p class="muted">Open the helper dialog on the active Marketplace tab.</p>
+                </div>
+                <button id="openDialogButton" class="primary" type="button">Open</button>
+            </div>
+        </section>
+
+        <section class="panel stack" aria-labelledby="settings-title">
+            <div>
+                <h2 id="settings-title">Settings</h2>
+                <p class="muted">Configure the in-page helper and review tools.</p>
+            </div>
+
+            <div class="field">
+                <label for="shortcutValue">Current shortcut</label>
+                <output id="shortcutValue" class="kbd" for="recordShortcutButton">Loading...</output>
+            </div>
+
+            <div class="shortcut-builder" aria-label="Shortcut editor">
+                <div class="field">
+                    <label for="modifierOneSelect">First key</label>
+                    <select id="modifierOneSelect">
+                        <option value="">None</option>
+                        <option value="Ctrl">Ctrl</option>
+                        <option value="Alt">Alt</option>
+                        <option value="Shift">Shift</option>
+                        <option value="Meta">Meta</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="modifierTwoSelect">Second key</label>
+                    <select id="modifierTwoSelect">
+                        <option value="">None</option>
+                        <option value="Ctrl">Ctrl</option>
+                        <option value="Alt">Alt</option>
+                        <option value="Shift">Shift</option>
+                        <option value="Meta">Meta</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="recordShortcutButton">Final key</label>
+                    <button id="recordShortcutButton" class="secondary final-key" type="button">M</button>
+                </div>
+            </div>
+
+            <div class="cluster">
+                <button id="resetShortcutButton" class="secondary" type="button">Reset</button>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <label id="imageAnalysisLabel" class="setting-title">Image analysis copy</label>
+                    <p class="muted">Add copy buttons next to resident request images.</p>
+                </div>
+                <button
+                    id="imageAnalysisToggle"
+                    class="switch"
+                    type="button"
+                    role="switch"
+                    aria-labelledby="imageAnalysisLabel"
+                    aria-checked="false"
+                >
+                    Off
+                </button>
+            </div>
+        </section>
+
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="popup.js"></script>
+</body>
+</html>

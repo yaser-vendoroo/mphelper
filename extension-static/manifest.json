@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "MPHelper",
+  "description": "MPHelper - Vendoroo Marketplace WO Number Helper & tools",
+  "version": "__VERSION__",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "MPHelper",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://testing-marketplace.vendoroo.ai/*",
+    "https://marketplace.vendoroo.ai/*",
+    "https://api-testing-marketplace.vendoroo.ai/*",
+    "https://api-marketplace.vendoroo.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://testing-marketplace.vendoroo.ai/*",
+        "https://marketplace.vendoroo.ai/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-interceptor.js"],
+      "matches": [
+        "https://testing-marketplace.vendoroo.ai/*",
+        "https://marketplace.vendoroo.ai/*"
+      ]
+    }
+  ]
+}
