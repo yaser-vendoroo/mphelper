@@ -5,10 +5,15 @@ alwaysApply: true
 
 # MPHelper project
 
-- **One-file userscript**: `vtools.user.js` (script name is **MPHelper**). Tampermonkey, no build.
-- **Purpose**: WO number helper on Vendoroo marketplace (testing + production); JWT per env in GM storage, WO from URL UUID; APIs `api-testing-marketplace` / `api-marketplace` + `/api/WorkOrder/{id}`.
-- **When editing**: Keep IIFE + strict mode; single self-contained file; preserve `@match` / `@connect` for both hosts; UI uses `vendoroo-wo-helper-overlay` and floating button.
-- **Versioning**: **Semantic versioning** in `@version` as `MAJOR.MINOR.PATCH` (e.g. `2.1.0`). Bump PATCH for fixes, MINOR for backward-compatible features/UX, MAJOR for breaking behavior. **Always** update `@version` in `vtools.user.js` when making a substantive change (aligned with that semver meaning).
-- **Side effects**: Prefer minimal, targeted diffs; do not remove or weaken existing behavior unless explicitly requested; consider JWT capture, dialog, shortcuts, WO fetch, and any DOM injection (e.g. image-analysis buttons) when changing shared code.
-- **Git**: **Do not** create git commits unless the user explicitly asks to commit. When they do ask, use conventional commit format. Subject: `type: short summary` (imperative mood, max 72 chars). Optional body: bullet list in **past tense**; reference tickets if applicable. Types: feat, fix, docs, chore, refactor, style. Example: subject `Add scoring for AI Router` → body bullets like "Implemented base scoring function", "Added weights for context matching".
-- **Details**: See `AGENTS.md` for API, storage key, and conventions.
+- **Source**: edit `src/`; run `npm run build` to generate Tampermonkey + Chrome extension.
+- **Outputs**: `vtools.user.js` / `dist/vtools.user.js` (Tampermonkey); `dist/extension/` (MV3 unpacked).
+- **One-file userscript name**: **MPHelper**. Tampermonkey, no runtime deps in extension.
+- **Purpose**: WO number helper on Vendoroo marketplace (testing + production); JWT per env in storage, WO from URL UUID; APIs `api-testing-marketplace` / `api-marketplace` + `/api/WorkOrder/{id}`.
+- **Terms**:
+  - **App**: the in-page UI injected into a marketplace tab. Overlay dialog at `#vendoroo-wo-helper-overlay`, opened via the configured hotkey on the page. Implemented in `src/shared/ui.js` and rendered by both export targets. Shows WO chips and Copy API Response — no settings UI.
+  - **Settings**: the extension popup shown when the user clicks the MPHelper toolbar icon (`extension-static/popup.html` + `popup.js`, MV3 `action.default_popup`). Owns shortcut configuration and the image-analysis copy toggle; writes to `chrome.storage.local` and notifies the App via `chrome.runtime.sendMessage`. Extension-only.
+- **When editing**: Keep IIFE + strict mode in entries; shared logic in `src/shared/`; preserve `@match` / `@connect` and manifest host permissions for both hosts. **App** uses the `vendoroo-wo-helper-overlay` selector; **Settings** lives in `extension-static/`. Keep IDs/classes unique across both surfaces.
+- **Versioning**: **Semantic versioning** in `package.json` as `MAJOR.MINOR.PATCH`. Bump PATCH for fixes, MINOR for backward-compatible features/UX, MAJOR for breaking behavior. Run build after bumping.
+- **Side effects**: Prefer minimal, targeted diffs; do not remove or weaken existing behavior unless explicitly requested; consider JWT capture, App dialog, hotkey, WO fetch, image-analysis DOM injection (driven by Settings toggle), and Settings ↔ App messaging when changing shared code — test both export targets.
+- **Git**: **Do not** create git commits unless the user explicitly asks to commit. When they do ask, use conventional commit format. Subject: `type: short summary` (imperative mood, max 72 chars). Optional body: bullet list in **past tense**; reference tickets if applicable. Types: feat, fix, docs, chore, refactor, style.
+- **Details**: See `AGENTS.md` for layout, build, API, storage keys, and test checklist.
