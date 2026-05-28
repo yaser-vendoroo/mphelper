@@ -1,0 +1,72 @@
+---
+description: Git commit workflow — conventional commits, list changes for review, confirm title/body before committing
+alwaysApply: true
+---
+
+# Git commit (`git-commit`)
+
+**Do not commit** unless the user explicitly asks. When they do, follow this workflow.
+
+## One commit, one scope
+
+- **One logical change per commit** — do not merge unrelated work into a single commit.
+- **Multiple commits are normal** — after reviewing `git status` / `git diff`, if changes span more than one concern, plan **separate commits** (each with its own type, title, body, and staged files). Do not force everything into one commit because the user said "commit".
+- **Stage only relevant files** — use path-specific `git add` (not blind `git add .`) so each commit matches its title and body.
+- If the working tree mixes unrelated changes (e.g. build + docs + a bugfix), **split them**: propose an ordered list of commits (commit 1, commit 2, …) with titles and files for each; get approval, then commit **one at a time**.
+- The commit message must describe **everything in that commit and nothing outside it** — if the title says `fix: …`, do not include feature or docs changes in the same commit.
+
+## Before staging
+
+1. Run `git status` and `git diff` (staged + unstaged) to see what will be committed.
+2. **Identify scope(s)** — one commit or several? If multiple unrelated areas changed, outline **how many commits** you recommend and why.
+3. **List the changes** for the user — files and a short summary; for multi-commit plans, group files under each proposed commit.
+4. For the **current** commit only: stage the matching files.
+5. **Use the AskQuestion tool** to get explicit confirmation of the file list and commit scope before `git add` / `git commit`. Do not proceed on implied approval alone.
+6. After each commit, re-run `git status` — if further scoped commits remain, repeat from step 2 for the next one (with a **new** AskQuestion each time).
+
+## Before committing
+
+1. Draft a **commit title** and **body** for **this commit only**.
+2. **Use the AskQuestion tool** — present the title, body, and staged file list; get explicit approval before running `git commit`.
+3. Do not commit if the user chooses to edit; revise and ask again via AskQuestion.
+4. If more scoped commits remain after this one, do not batch them — loop back to **Before staging** for the next commit (new AskQuestion required).
+
+## Commit message format
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>: <short summary>
+
+- Past-tense bullet describing a change
+- Past-tense bullet describing another change
+```
+
+### Title (subject line)
+
+- **Imperative mood** — `Add feature`, not `Added feature`
+- **Max 72 characters**
+- **Start with a type**, then colon and space: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `style:`, `test:`, `perf:`, `build:`, `ci:`
+- Be **specific and descriptive** — say what changed, not vague labels
+
+### Body (optional)
+
+- Bullet list in **past tense** (e.g. `Implemented X`, `Removed Y from App dialog`)
+- Wrap at ~72 characters per line
+- Omit body for trivial one-line changes if the user prefers
+
+### Example
+
+```
+feat: minify extension bundles in build
+
+- Added esbuild minify for extension content, popup, and interceptor
+- Minified mphelper-lite.css via esbuild CSS pass
+- Left Tampermonkey userscript readable; added MPHELPER_MINIFY=0 escape hatch
+```
+
+## Git safety
+
+- Never update git config, force-push, or skip hooks unless the user explicitly asks
+- Never commit secrets (`.env`, credentials, keys)
+- Use a HEREDOC for the commit message to preserve formatting
