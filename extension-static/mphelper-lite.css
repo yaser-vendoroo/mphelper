@@ -192,11 +192,29 @@ select:focus-visible {
     opacity: .55;
 }
 
+.shortcut-section {
+    display: grid;
+    gap: 6px;
+}
+
 .shortcut-builder {
     display: grid;
-    grid-template-columns: 1fr 1fr .8fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
     gap: 8px;
-    align-items: end;
+    align-items: center;
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    padding: 0 8px;
+}
+
+.icon-btn-glyph {
+    display: block;
+    flex-shrink: 0;
 }
 
 .primary {
@@ -219,7 +237,8 @@ select:focus-visible {
 }
 
 .final-key {
-    width: 100%;
+    min-width: 44px;
+    padding: 0 10px;
     background: var(--color-primary-soft);
     border-color: rgba(103, 80, 164, .22);
     color: #35205f;

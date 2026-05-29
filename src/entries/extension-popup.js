@@ -7,7 +7,6 @@ import { VERSION } from '../shared/version.js';
 (async function() {
     'use strict';
 
-    const shortcutValue = document.getElementById('shortcutValue');
     const recordShortcutButton = document.getElementById('recordShortcutButton');
     const resetShortcutButton = document.getElementById('resetShortcutButton');
     const modifierOneSelect = document.getElementById('modifierOneSelect');
@@ -73,7 +72,6 @@ import { VERSION } from '../shared/version.js';
         if (!finalKey || !combo) return;
 
         storageApi.setStoredShortcut(combo);
-        shortcutValue.textContent = combo;
         recordShortcutButton.textContent = finalKey;
         if (message) setStatus(message);
     }
@@ -90,7 +88,6 @@ import { VERSION } from '../shared/version.js';
         modifierTwoSelect.value = mods[1] || '';
         finalKey = parsed.key || parseShortcut(DEFAULT_SHORTCUT).key;
         updateDisabledModifierOptions();
-        shortcutValue.textContent = buildShortcut();
         recordShortcutButton.textContent = finalKey;
     }
 

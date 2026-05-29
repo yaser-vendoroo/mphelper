@@ -17,42 +17,43 @@
         </header>
 
         <section class="panel stack" aria-label="Settings">
-            <div class="field">
-                <label for="shortcutValue" class="setting-title">Current Shortcut</label>
-                <output id="shortcutValue" class="kbd" for="recordShortcutButton">Loading...</output>
-            </div>
-
-            <div class="shortcut-builder" aria-label="Shortcut editor">
-                <div class="field">
-                    <label for="modifierOneSelect" class="setting-title">First Key</label>
-                    <select id="modifierOneSelect">
+            <div class="shortcut-section">
+                <span id="shortcutLabel" class="setting-title">Shortcut</span>
+                <div class="shortcut-builder" aria-labelledby="shortcutLabel">
+                    <select id="modifierOneSelect" aria-label="First modifier key">
                         <option value="">None</option>
                         <option value="Ctrl">Ctrl</option>
                         <option value="Alt">Alt</option>
                         <option value="Shift">Shift</option>
                         <option value="Meta">Meta</option>
                     </select>
-                </div>
-
-                <div class="field">
-                    <label for="modifierTwoSelect" class="setting-title">Second Key</label>
-                    <select id="modifierTwoSelect">
+                    <select id="modifierTwoSelect" aria-label="Second modifier key">
                         <option value="">None</option>
                         <option value="Ctrl">Ctrl</option>
                         <option value="Alt">Alt</option>
                         <option value="Shift">Shift</option>
                         <option value="Meta">Meta</option>
                     </select>
+                    <button
+                        id="recordShortcutButton"
+                        class="secondary final-key"
+                        type="button"
+                        aria-label="Final key"
+                    >
+                        M
+                    </button>
+                    <button
+                        id="resetShortcutButton"
+                        class="secondary icon-btn"
+                        type="button"
+                        aria-label="Reset shortcut"
+                        title="Reset shortcut"
+                    >
+                        <svg class="icon-btn-glyph" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+                        </svg>
+                    </button>
                 </div>
-
-                <div class="field">
-                    <label for="recordShortcutButton" class="setting-title">Final Key</label>
-                    <button id="recordShortcutButton" class="secondary final-key" type="button">M</button>
-                </div>
-            </div>
-
-            <div class="cluster">
-                <button id="resetShortcutButton" class="secondary" type="button">Reset</button>
             </div>
 
             <div class="setting-row">
