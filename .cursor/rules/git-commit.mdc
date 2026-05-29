@@ -10,16 +10,34 @@ alwaysApply: true
 ## One commit, one scope
 
 - **One logical change per commit** — do not merge unrelated work into a single commit.
-- **Multiple commits are normal** — after reviewing `git status` / `git diff`, if changes span more than one concern, plan **separate commits** (each with its own type, title, body, and staged files). Do not force everything into one commit because the user said "commit".
+- **Multiple commits are normal** — when the user asks to commit and the working tree has several uncommitted changes, **categorize first**, then commit **one category at a time**.
+- **Batch related changes** — files that belong to the same category, domain, or scope (e.g. all docs, all build-script changes, one feature across `src/` + `extension-static/`) may go in **one commit**. Do not split them artificially.
+- **Never mix unrelated categories** — do not put docs, cursor rules, build tooling, and feature code in the same commit unless they are truly one indivisible change.
 - **Stage only relevant files** — use path-specific `git add` (not blind `git add .`) so each commit matches its title and body.
-- If the working tree mixes unrelated changes (e.g. build + docs + a bugfix), **split them**: propose an ordered list of commits (commit 1, commit 2, …) with titles and files for each; get approval, then commit **one at a time**.
+- If the working tree mixes unrelated changes (e.g. build + docs + a bugfix), **split them**: propose an ordered list of commits (commit 1, commit 2, …) with titles, files, and category for each; get approval, then commit **one at a time**.
 - The commit message must describe **everything in that commit and nothing outside it** — if the title says `fix: …`, do not include feature or docs changes in the same commit.
+
+## Categorizing multiple changes
+
+When `git status` shows more than one modified area:
+
+1. **Review all diffs** — `git status` and `git diff` (staged + unstaged).
+2. **Group by category** — e.g. `docs`, `chore` (rules/tooling), `refactor`, `feat`, `fix`, `build`. Use file paths and change purpose, not file count alone.
+3. **Decide commit count** — one commit per category/scope unless the user asked for a single specific file or path.
+4. **Present the plan** — list each proposed commit with type, title, files, and one-line rationale before staging anything.
+5. **Execute sequentially** — complete commit 1 (AskQuestion → stage → AskQuestion → commit), re-run `git status`, then proceed to commit 2, and so on.
+
+**Batch (same commit):** README + INSTALL.md; Makefile + `scripts/build.mjs` for the same build change; all files removed for one deprecation.
+
+**Split (separate commits):** cursor rules vs application source; docs vs `package.json` version bump; unrelated bugfix vs new feature.
+
+If the user names a single file or narrow path (e.g. “commit `.cursor/rules/git-commit.mdc`”), scope is **only that file** — do not include other pending changes.
 
 ## Before staging
 
 1. Run `git status` and `git diff` (staged + unstaged) to see what will be committed.
-2. **Identify scope(s)** — one commit or several? If multiple unrelated areas changed, outline **how many commits** you recommend and why.
-3. **List the changes** for the user — files and a short summary; for multi-commit plans, group files under each proposed commit.
+2. **Identify scope(s)** — one commit or several? Apply [Categorizing multiple changes](#categorizing-multiple-changes) when more than one area changed.
+3. **List the changes** for the user — files and a short summary; for multi-commit plans, group files under each proposed commit by category.
 4. For the **current** commit only: stage the matching files.
 5. **Use the AskQuestion tool** to get explicit confirmation of the file list and commit scope before `git add` / `git commit`. Do not proceed on implied approval alone.
 6. After each commit, re-run `git status` — if further scoped commits remain, repeat from step 2 for the next one (with a **new** AskQuestion each time).
@@ -62,7 +80,7 @@ feat: minify extension bundles in build
 
 - Added esbuild minify for extension content, popup, and interceptor
 - Minified mphelper-lite.css via esbuild CSS pass
-- Left Tampermonkey userscript readable; added MPHELPER_MINIFY=0 escape hatch
+- Added MPHELPER_MINIFY=0 escape hatch for readable bundles
 ```
 
 ## Git safety
