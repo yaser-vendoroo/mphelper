@@ -215,21 +215,12 @@ export function createUI({
     storageApi,
     workOrderApi,
     clipboardApi,
-    imageAnalysis,
-    loadGoogleFonts = false
+    imageAnalysis
 }) {
-    const fontFamily = loadGoogleFonts
-        ? "'Roboto', " + FONT_STACK
-        : FONT_STACK;
+    const fontFamily = FONT_STACK;
 
     function injectMaterialStyles() {
         if (document.getElementById('vendoroo-mphelper-styles')) return;
-        if (loadGoogleFonts) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap';
-            document.head.appendChild(link);
-        }
         const style = document.createElement('style');
         style.id = 'vendoroo-mphelper-styles';
         style.textContent = getStylesCss(fontFamily);

@@ -11,24 +11,6 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const version = pkg.version;
 const MINIFY = process.env.MPHELPER_MINIFY !== '0';
 
-const userscriptHeader = `// ==UserScript==
-// @name         MPHelper
-// @namespace    http://tampermonkey.net/
-// @version      ${version}
-// @description  MPHelper - Vendoroo Marketplace WO Number Helper & tools
-// @match        https://testing-marketplace.vendoroo.ai/*
-// @match        https://marketplace.vendoroo.ai/*
-// @run-at       document-start
-// @grant        GM_setValue
-// @grant        GM_getValue
-// @grant        GM_xmlhttpRequest
-// @connect      api-testing-marketplace.vendoroo.ai
-// @connect      api-marketplace.vendoroo.ai
-// @connect      fonts.googleapis.com
-// @connect      fonts.gstatic.com
-// ==/UserScript==
-`;
-
 const distDir = path.join(root, 'dist');
 const extDir = path.join(distDir, 'extension');
 
@@ -73,28 +55,16 @@ async function renderIcons() {
 async function build() {
     ensureDir(extDir);
 
-    const common = {
+    const extensionCommon = {
         bundle: true,
         platform: 'browser',
         target: ['chrome109'],
         legalComments: 'none',
+        minify: MINIFY,
         define: {
             __MPHELPER_VERSION__: JSON.stringify(version)
         }
     };
-
-    const extensionCommon = {
-        ...common,
-        minify: MINIFY
-    };
-
-    await esbuild.build({
-        ...common,
-        entryPoints: [path.join(root, 'src/entries/userscript.js')],
-        format: 'iife',
-        outfile: path.join(distDir, 'vtools.user.js'),
-        banner: { js: userscriptHeader }
-    });
 
     const contentOut = path.join(extDir, 'content.js');
     const popupOut = path.join(extDir, 'popup.js');
@@ -145,8 +115,6 @@ async function build() {
 
     await renderIcons();
 
-    fs.copyFileSync(path.join(distDir, 'vtools.user.js'), path.join(root, 'vtools.user.js'));
-
     const extSizes = [
         logFileSize(contentOut),
         logFileSize(popupOut),
@@ -155,9 +123,8 @@ async function build() {
     ].join(' · ');
 
     console.log(`Built MPHelper v${version}`);
-    console.log(`  Tampermonkey: dist/vtools.user.js (+ root vtools.user.js)`);
-    console.log(`  Extension:    dist/extension/ (${MINIFY ? 'minified' : 'readable'})`);
-    console.log(`  Extension sizes: ${extSizes}`);
+    console.log(`  Extension: dist/extension/ (${MINIFY ? 'minified' : 'readable'})`);
+    console.log(`  Bundle sizes: ${extSizes}`);
 }
 
 build().catch((err) => {

@@ -1,8 +1,8 @@
 {
   "name": "mphelper",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "private": true,
-  "description": "MPHelper – Vendoroo Marketplace WO helper (Tampermonkey + Chrome extension)",
+  "description": "MPHelper – Chrome extension for Vendoroo Marketplace productivity tools",
   "scripts": {
     "build": "node scripts/build.mjs"
   },

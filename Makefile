@@ -3,8 +3,6 @@
 NODE_MODULES := node_modules
 DIST := dist
 EXTENSION := $(DIST)/extension
-USERSCRIPT := vtools.user.js
-USERSCRIPT_DIST := $(DIST)/vtools.user.js
 VERSION := $(shell node -p "require('./package.json').version")
 PACKAGE_ZIP := $(DIST)/mphelper-extension-v$(VERSION).zip
 
@@ -20,7 +18,7 @@ install: $(NODE_MODULES) ## Install Node dev dependencies
 $(NODE_MODULES): package.json package-lock.json
 	npm install
 
-build: $(NODE_MODULES) ## Build Tampermonkey userscript and Chrome extension
+build: $(NODE_MODULES) ## Build Chrome extension
 	npm run build
 
 clean: ## Remove build output (dist/)
@@ -36,14 +34,10 @@ setup: install build ## First-time setup: install deps and build
 version: ## Print package version
 	@echo $(VERSION)
 
-paths: ## Print install paths for userscript and extension
-	@echo "Userscript (repo root): $(CURDIR)/$(USERSCRIPT)"
-	@echo "Userscript (dist):      $(CURDIR)/$(USERSCRIPT_DIST)"
-	@echo "Chrome extension:       $(CURDIR)/$(EXTENSION)/"
+paths: ## Print install path for the extension
+	@echo "Chrome extension: $(CURDIR)/$(EXTENSION)/"
 
 check: build ## Build and verify expected output files exist
-	@test -f $(USERSCRIPT) || (echo "Missing $(USERSCRIPT)" && exit 1)
-	@test -f $(USERSCRIPT_DIST) || (echo "Missing $(USERSCRIPT_DIST)" && exit 1)
 	@test -f $(EXTENSION)/manifest.json || (echo "Missing extension manifest" && exit 1)
 	@test -f $(EXTENSION)/content.js || (echo "Missing extension content.js" && exit 1)
 	@test -f $(EXTENSION)/popup.html || (echo "Missing extension popup.html" && exit 1)

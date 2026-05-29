@@ -43,8 +43,7 @@ import { createWorkOrderApi } from '../shared/work-order.js';
             storageApi,
             workOrderApi,
             clipboardApi,
-            imageAnalysis,
-            loadGoogleFonts: false
+            imageAnalysis
         });
 
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
