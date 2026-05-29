@@ -13,6 +13,8 @@ import { VERSION } from '../shared/version.js';
     const modifierOneSelect = document.getElementById('modifierOneSelect');
     const modifierTwoSelect = document.getElementById('modifierTwoSelect');
     const imageAnalysisToggle = document.getElementById('imageAnalysisToggle');
+    const timelineTimestampsToggle = document.getElementById('timelineTimestampsToggle');
+    const timelineTzModeSelect = document.getElementById('timelineTzModeSelect');
     const openDialogButton = document.getElementById('openDialogButton');
     const status = document.getElementById('status');
     const appVersion = document.getElementById('appVersion');
@@ -98,6 +100,24 @@ import { VERSION } from '../shared/version.js';
         const enabled = storageApi.getImageAnalysisCopyEnabled();
         imageAnalysisToggle.textContent = enabled ? 'On' : 'Off';
         imageAnalysisToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+    }
+
+    function syncTimelineSettings() {
+        const enabled = storageApi.getTimelineTimestampsEnabled();
+        timelineTimestampsToggle.textContent = enabled ? 'On' : 'Off';
+        timelineTimestampsToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+        timelineTzModeSelect.disabled = !enabled;
+        timelineTzModeSelect.value = storageApi.getTimelineTzMode();
+    }
+
+    function notifyTimelineSettings(statusMessage) {
+        notifyActiveTab({
+            source: 'mphelper-popup',
+            type: 'timeline-timestamps-changed',
+            enabled: storageApi.getTimelineTimestampsEnabled(),
+            tzMode: storageApi.getTimelineTzMode()
+        });
+        if (statusMessage) setStatus(statusMessage);
     }
 
     function normalizeFinalKey(ev) {
@@ -197,8 +217,24 @@ import { VERSION } from '../shared/version.js';
         });
         setStatus(enabled ? 'Image analysis copy enabled.' : 'Image analysis copy disabled.');
     });
+    timelineTimestampsToggle.addEventListener('click', () => {
+        const enabled = !storageApi.getTimelineTimestampsEnabled();
+        storageApi.setTimelineTimestampsEnabled(enabled);
+        syncTimelineSettings();
+        notifyTimelineSettings(
+            enabled ? 'Timeline timestamps enabled.' : 'Timeline timestamps disabled.'
+        );
+    });
+    timelineTzModeSelect.addEventListener('change', () => {
+        storageApi.setTimelineTzMode(timelineTzModeSelect.value);
+        syncTimelineSettings();
+        if (storageApi.getTimelineTimestampsEnabled()) {
+            notifyTimelineSettings('Timeline timezone updated.');
+        }
+    });
     openDialogButton.addEventListener('click', openPageDialog);
 
     refreshShortcut();
     syncImageAnalysisToggle();
+    syncTimelineSettings();
 })();

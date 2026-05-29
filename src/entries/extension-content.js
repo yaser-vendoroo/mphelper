@@ -1,9 +1,10 @@
 import { createHttpFetch } from '../adapters/http-fetch.js';
 import { createStorageChrome } from '../adapters/storage-chrome.js';
 import { createClipboardApi } from '../shared/clipboard.js';
-import { JWT_MESSAGE_SOURCE } from '../shared/constants.js';
+import { JWT_MESSAGE_SOURCE, TIMELINE_TIMESTAMPS_ENABLED_KEY } from '../shared/constants.js';
 import { createImageAnalysis } from '../shared/image-analysis.js';
 import { createStorageApi } from '../shared/storage-api.js';
+import { createTimelineTimestamps } from '../shared/timeline-timestamps.js';
 import { createUI } from '../shared/ui.js';
 import { createWorkOrderApi } from '../shared/work-order.js';
 
@@ -39,11 +40,13 @@ import { createWorkOrderApi } from '../shared/work-order.js';
         const workOrderApi = createWorkOrderApi(http);
         const clipboardApi = createClipboardApi(http);
         const imageAnalysis = createImageAnalysis(storageApi, clipboardApi);
+        const timelineTimestamps = createTimelineTimestamps({ storageApi, workOrderApi });
         const ui = createUI({
             storageApi,
             workOrderApi,
             clipboardApi,
-            imageAnalysis
+            imageAnalysis,
+            timelineTimestamps
         });
 
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -65,10 +68,35 @@ import { createWorkOrderApi } from '../shared/work-order.js';
                 sendResponse({ ok: true });
                 return false;
             }
+            if (message.type === 'timeline-timestamps-changed') {
+                storageApi.setTimelineTimestampsEnabled(!!message.enabled);
+                if (message.tzMode) {
+                    storageApi.setTimelineTzMode(message.tzMode);
+                    timelineTimestamps.invalidateClientTimeZoneCache();
+                }
+                if (message.enabled) {
+                    timelineTimestamps.scheduleTimelineScan();
+                } else {
+                    timelineTimestamps.removeTimelineTimestampUI();
+                }
+                sendResponse({ ok: true });
+                return false;
+            }
             return false;
         });
 
         ui.initUI();
+
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area !== 'local' || !(TIMELINE_TIMESTAMPS_ENABLED_KEY in changes)) return;
+            const enabled = changes[TIMELINE_TIMESTAMPS_ENABLED_KEY].newValue === true;
+            storageApi.setTimelineTimestampsEnabled(enabled);
+            if (enabled) {
+                timelineTimestamps.scheduleTimelineScan();
+            } else {
+                timelineTimestamps.removeTimelineTimestampUI();
+            }
+        });
     }
 
     if (document.body) boot();

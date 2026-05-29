@@ -208,6 +208,91 @@ function getStylesCss(fontFamily) {
                 border-color: #ef9a9a;
                 background: #ffebee;
             }
+            .vendoroo-mphelper-timeline-ts {
+                display: block;
+                box-sizing: border-box;
+                margin-top: 1px;
+                text-align: center;
+                font-size: 12px;
+                line-height: 1.25;
+                font-weight: 400;
+                letter-spacing: 0;
+                color: #98a2b3;
+                white-space: normal;
+                max-width: 7.5rem;
+                word-break: break-word;
+                pointer-events: none;
+                user-select: text;
+            }
+            .vendoroo-mphelper-timeline-ts-slot {
+                display: block;
+                width: 100%;
+                flex: 0 0 100%;
+                margin: 0;
+                padding: 0;
+            }
+            .vendoroo-mphelper-timeline-ts-break {
+                flex: 0 0 100%;
+                width: 100%;
+                height: 0;
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+            }
+            .vendoroo-mphelper-timeline-ts--spine {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                line-height: 1.25;
+                gap: 0;
+            }
+            .vendoroo-mphelper-timeline-ts--spine .vendoroo-mphelper-timeline-ts-date,
+            .vendoroo-mphelper-timeline-ts--spine .vendoroo-mphelper-timeline-ts-time,
+            .vendoroo-mphelper-timeline-ts--spine .vendoroo-mphelper-timeline-ts-tz {
+                display: block;
+            }
+            .vendoroo-mphelper-spine-clock-hidden {
+                display: none !important;
+            }
+            .vendoroo-mphelper-timeline-relative-hidden {
+                display: none !important;
+            }
+            .vendoroo-mphelper-timeline-ts-wrap {
+                display: inline-flex;
+                flex-direction: row;
+                align-items: baseline;
+                vertical-align: baseline;
+                flex-shrink: 0;
+                max-width: none;
+                gap: 0.5em;
+            }
+            .vendoroo-mphelper-timeline-ts--stack {
+                display: inline;
+                font-size: 11px;
+                line-height: 1.2;
+                margin: 0;
+                white-space: nowrap;
+                max-width: none;
+                word-break: normal;
+            }
+            .vendoroo-mphelper-timeline-ts--inline {
+                display: inline;
+                max-width: none;
+                white-space: nowrap;
+                vertical-align: baseline;
+                margin-top: 0;
+                margin-left: 8px;
+                text-align: inherit;
+            }
+            .vendoroo-mphelper-timeline-ts--step {
+                display: block;
+                width: 100%;
+                max-width: 100%;
+                text-align: right;
+                margin-top: 6px;
+                line-height: 1.35;
+            }
         `;
 }
 
@@ -215,7 +300,8 @@ export function createUI({
     storageApi,
     workOrderApi,
     clipboardApi,
-    imageAnalysis
+    imageAnalysis,
+    timelineTimestamps
 }) {
     const fontFamily = FONT_STACK;
 
@@ -398,6 +484,7 @@ export function createUI({
     function initUI() {
         injectMaterialStyles();
         imageAnalysis.installImageAnalysisCopyObserver();
+        timelineTimestamps.installTimelineObserver();
         const floatingBtn = createFloatingButton();
         floatingBtn.onclick = openDialog;
         floatingBtn.style.display = 'none';

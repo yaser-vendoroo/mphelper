@@ -1,6 +1,6 @@
 {
   "name": "mphelper",
-  "version": "2.14.0",
+  "version": "2.15.7",
   "private": true,
   "description": "MPHelper – Chrome extension for Vendoroo Marketplace productivity tools",
   "scripts": {

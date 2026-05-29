@@ -90,3 +90,40 @@ export function getResidentUserIdFromPayload(data) {
     }
     return null;
 }
+
+function collectTimeZoneCandidates(obj, out) {
+    if (obj == null || typeof obj !== 'object') return;
+    const keys = [
+        'timeZone', 'timezone', 'TimeZone', 'Timezone',
+        'propertyTimeZone', 'clientTimeZone', 'ClientTimeZone'
+    ];
+    for (const key of keys) {
+        const v = obj[key];
+        if (v != null && String(v).trim() !== '') out.push(String(v).trim());
+    }
+    if (obj.property && typeof obj.property === 'object') {
+        for (const key of ['timeZone', 'timezone', 'TimeZone', 'Timezone']) {
+            const v = obj.property[key];
+            if (v != null && String(v).trim() !== '') out.push(String(v).trim());
+        }
+    }
+    if (obj.client && typeof obj.client === 'object') {
+        for (const key of ['timeZone', 'timezone', 'TimeZone']) {
+            const v = obj.client[key];
+            if (v != null && String(v).trim() !== '') out.push(String(v).trim());
+        }
+    }
+}
+
+export function getClientTimeZoneFromPayload(data) {
+    if (data == null || typeof data !== 'object') return null;
+    const candidates = [];
+    collectTimeZoneCandidates(data, candidates);
+    if (data.data && typeof data.data === 'object') {
+        collectTimeZoneCandidates(data.data, candidates);
+    }
+    for (const tz of candidates) {
+        if (/^[A-Za-z_]+\/[A-Za-z_]+$/.test(tz) || tz === 'UTC') return tz;
+    }
+    return candidates[0] || null;
+}

@@ -62,7 +62,7 @@ Version is defined in `package.json` and synced to `manifest.json` and build out
 
 ## Conventions for edits
 
-- **Versioning**: **[Semantic versioning](https://semver.org/)** — bump `package.json` `version` as `MAJOR.MINOR.PATCH`. **PATCH** ↑ for bug fixes; **MINOR** ↑ for backward-compatible features or UX; **MAJOR** ↑ for incompatible behavior changes. Run `npm run build` after bumping.
+- **Versioning**: **[Semantic versioning](https://semver.org/)** — `package.json` `version` is `MAJOR.MINOR.PATCH`. **Never bump the version without explicit user confirmation** (AskQuestion in Cursor; propose version + PATCH/MINOR/MAJOR rationale). Do not bump on plan/task hints or implied approval. Run `npm run build` after a confirmed bump to sync manifest and outputs.
 - **Side effects / regressions**: Keep changes scoped; avoid breaking existing features (JWT auto-capture, App dialog, hotkey, WO fetch, image-analysis DOM injection driven by Settings toggle, Settings ↔ App messaging). When touching shared helpers or globals, consider impact on all call sites.
 - **Git commits**: **Do not commit** unless the user explicitly asks. When they ask, use conventional commit format:
   - **Format**: Short summary line, then optional bullet list (past tense). Reference related tickets if applicable.

@@ -2,6 +2,10 @@ export const STORAGE_KEY_TESTING = 'vendoroo_wo_helper_jwt';
 export const STORAGE_KEY_PROD = 'vendoroo_wo_helper_jwt_prod';
 export const SHORTCUT_STORAGE_KEY = 'vendoroo_mphelper_shortcut';
 export const IMAGE_ANALYSIS_COPY_STORAGE_KEY = 'vendoroo_mphelper_image_analysis_copy_enabled';
+export const TIMELINE_TIMESTAMPS_ENABLED_KEY = 'vendoroo_mphelper_timeline_timestamps_enabled';
+export const TIMELINE_TZ_MODE_KEY = 'vendoroo_mphelper_timeline_tz_mode';
+export const DEFAULT_TIMELINE_TZ_MODE = 'local';
+export const TIMELINE_TZ_MODES = ['local', 'client', 'utc'];
 export const DEFAULT_SHORTCUT = 'Ctrl+Shift+M';
 export const WORK_ORDER_API_PATH = '/api/WorkOrder';
 

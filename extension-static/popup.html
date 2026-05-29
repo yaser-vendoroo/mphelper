@@ -83,6 +83,33 @@
                     Off
                 </button>
             </div>
+
+            <div class="setting-row stack gap-1">
+                <div class="split">
+                    <div>
+                        <label id="timelineTimestampsLabel" class="setting-title">Timeline timestamps</label>
+                        <p class="muted">Show full date and time inline on activity timeline entries.</p>
+                    </div>
+                    <button
+                        id="timelineTimestampsToggle"
+                        class="switch"
+                        type="button"
+                        role="switch"
+                        aria-labelledby="timelineTimestampsLabel"
+                        aria-checked="false"
+                    >
+                        Off
+                    </button>
+                </div>
+                <div class="field">
+                    <label for="timelineTzModeSelect">Timezone display</label>
+                    <select id="timelineTzModeSelect" disabled>
+                        <option value="local">Local</option>
+                        <option value="client">Client</option>
+                        <option value="utc">UTC</option>
+                    </select>
+                </div>
+            </div>
         </section>
 
         <p id="status" class="status" role="status" aria-live="polite"></p>
