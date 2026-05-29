@@ -13,8 +13,10 @@ import { VERSION } from '../shared/version.js';
     const modifierOneSelect = document.getElementById('modifierOneSelect');
     const modifierTwoSelect = document.getElementById('modifierTwoSelect');
     const imageAnalysisToggle = document.getElementById('imageAnalysisToggle');
-    const timelineTimestampsToggle = document.getElementById('timelineTimestampsToggle');
-    const timelineTzModeSelect = document.getElementById('timelineTzModeSelect');
+    const timelineModeGroup = document.getElementById('timelineModeGroup');
+    const timelineModeButtons = timelineModeGroup
+        ? [...timelineModeGroup.querySelectorAll('[data-timeline-mode]')]
+        : [];
     const openDialogButton = document.getElementById('openDialogButton');
     const status = document.getElementById('status');
     const appVersion = document.getElementById('appVersion');
@@ -102,12 +104,28 @@ import { VERSION } from '../shared/version.js';
         imageAnalysisToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
     }
 
+    function getActiveTimelineMode() {
+        if (!storageApi.getTimelineTimestampsEnabled()) return 'off';
+        return storageApi.getTimelineTzMode();
+    }
+
     function syncTimelineSettings() {
-        const enabled = storageApi.getTimelineTimestampsEnabled();
-        timelineTimestampsToggle.textContent = enabled ? 'On' : 'Off';
-        timelineTimestampsToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
-        timelineTzModeSelect.disabled = !enabled;
-        timelineTzModeSelect.value = storageApi.getTimelineTzMode();
+        const activeMode = getActiveTimelineMode();
+        for (const button of timelineModeButtons) {
+            const selected = button.dataset.timelineMode === activeMode;
+            button.classList.toggle('is-selected', selected);
+            button.setAttribute('aria-checked', selected ? 'true' : 'false');
+        }
+    }
+
+    function applyTimelineMode(mode) {
+        if (mode === 'off') {
+            storageApi.setTimelineTimestampsEnabled(false);
+            return;
+        }
+
+        storageApi.setTimelineTimestampsEnabled(true);
+        storageApi.setTimelineTzMode(mode);
     }
 
     function notifyTimelineSettings(statusMessage) {
@@ -217,20 +235,16 @@ import { VERSION } from '../shared/version.js';
         });
         setStatus(enabled ? 'Image analysis copy enabled.' : 'Image analysis copy disabled.');
     });
-    timelineTimestampsToggle.addEventListener('click', () => {
-        const enabled = !storageApi.getTimelineTimestampsEnabled();
-        storageApi.setTimelineTimestampsEnabled(enabled);
+    timelineModeGroup?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-timeline-mode]');
+        if (!button) return;
+
+        const mode = button.dataset.timelineMode;
+        if (mode === getActiveTimelineMode()) return;
+
+        applyTimelineMode(mode);
         syncTimelineSettings();
-        notifyTimelineSettings(
-            enabled ? 'Timeline timestamps enabled.' : 'Timeline timestamps disabled.'
-        );
-    });
-    timelineTzModeSelect.addEventListener('change', () => {
-        storageApi.setTimelineTzMode(timelineTzModeSelect.value);
-        syncTimelineSettings();
-        if (storageApi.getTimelineTimestampsEnabled()) {
-            notifyTimelineSettings('Timeline timezone updated.');
-        }
+        notifyTimelineSettings();
     });
     openDialogButton.addEventListener('click', openPageDialog);
 

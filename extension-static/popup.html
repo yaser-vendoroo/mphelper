@@ -8,35 +8,23 @@
 </head>
 <body>
     <main class="container stack">
-        <header class="stack gap-1">
-            <p class="eyebrow">Vendoroo Marketplace Helper</p>
-            <h1>MPHelper <small id="appVersion" class="version-tag" title="MPHelper version"></small></h1>
+        <header class="app-header">
+            <div class="app-header-copy stack gap-1">
+                <p class="eyebrow">Vendoroo Marketplace Helper</p>
+                <h1>MPHelper <small id="appVersion" class="version-tag" title="MPHelper version"></small></h1>
+            </div>
+            <button id="openDialogButton" class="primary app-header-action" type="button">Open</button>
         </header>
 
-        <section class="panel stack" aria-labelledby="features-title">
-            <div class="split">
-                <div>
-                    <h2 id="features-title">Page Tools</h2>
-                    <p class="muted">Open the helper dialog on the active Marketplace tab.</p>
-                </div>
-                <button id="openDialogButton" class="primary" type="button">Open</button>
-            </div>
-        </section>
-
-        <section class="panel stack" aria-labelledby="settings-title">
-            <div>
-                <h2 id="settings-title">Settings</h2>
-                <p class="muted">Configure the in-page helper and review tools.</p>
-            </div>
-
+        <section class="panel stack" aria-label="Settings">
             <div class="field">
-                <label for="shortcutValue">Current shortcut</label>
+                <label for="shortcutValue" class="setting-title">Current Shortcut</label>
                 <output id="shortcutValue" class="kbd" for="recordShortcutButton">Loading...</output>
             </div>
 
             <div class="shortcut-builder" aria-label="Shortcut editor">
                 <div class="field">
-                    <label for="modifierOneSelect">First key</label>
+                    <label for="modifierOneSelect" class="setting-title">First Key</label>
                     <select id="modifierOneSelect">
                         <option value="">None</option>
                         <option value="Ctrl">Ctrl</option>
@@ -47,7 +35,7 @@
                 </div>
 
                 <div class="field">
-                    <label for="modifierTwoSelect">Second key</label>
+                    <label for="modifierTwoSelect" class="setting-title">Second Key</label>
                     <select id="modifierTwoSelect">
                         <option value="">None</option>
                         <option value="Ctrl">Ctrl</option>
@@ -58,7 +46,7 @@
                 </div>
 
                 <div class="field">
-                    <label for="recordShortcutButton">Final key</label>
+                    <label for="recordShortcutButton" class="setting-title">Final Key</label>
                     <button id="recordShortcutButton" class="secondary final-key" type="button">M</button>
                 </div>
             </div>
@@ -68,10 +56,7 @@
             </div>
 
             <div class="setting-row">
-                <div>
-                    <label id="imageAnalysisLabel" class="setting-title">Image analysis copy</label>
-                    <p class="muted">Add copy buttons next to resident request images.</p>
-                </div>
+                <label id="imageAnalysisLabel" class="setting-title">Image Analysis Copy</label>
                 <button
                     id="imageAnalysisToggle"
                     class="switch"
@@ -84,30 +69,52 @@
                 </button>
             </div>
 
-            <div class="setting-row stack gap-1">
-                <div class="split">
-                    <div>
-                        <label id="timelineTimestampsLabel" class="setting-title">Timeline timestamps</label>
-                        <p class="muted">Show full date and time inline on activity timeline entries.</p>
-                    </div>
-                    <button
-                        id="timelineTimestampsToggle"
-                        class="switch"
-                        type="button"
-                        role="switch"
+            <div class="setting-block">
+                <div class="field">
+                    <label id="timelineTimestampsLabel" class="setting-title">Timeline Timestamps</label>
+                    <div
+                        id="timelineModeGroup"
+                        class="choice-group choice-group--stretch"
+                        role="radiogroup"
                         aria-labelledby="timelineTimestampsLabel"
+                    >
+                    <button
+                        type="button"
+                        class="choice-btn"
+                        data-timeline-mode="off"
+                        role="radio"
                         aria-checked="false"
                     >
                         Off
                     </button>
-                </div>
-                <div class="field">
-                    <label for="timelineTzModeSelect">Timezone display</label>
-                    <select id="timelineTzModeSelect" disabled>
-                        <option value="local">Local</option>
-                        <option value="client">Client</option>
-                        <option value="utc">UTC</option>
-                    </select>
+                    <button
+                        type="button"
+                        class="choice-btn"
+                        data-timeline-mode="local"
+                        role="radio"
+                        aria-checked="false"
+                    >
+                        Local
+                    </button>
+                    <button
+                        type="button"
+                        class="choice-btn"
+                        data-timeline-mode="client"
+                        role="radio"
+                        aria-checked="false"
+                    >
+                        Client
+                    </button>
+                    <button
+                        type="button"
+                        class="choice-btn"
+                        data-timeline-mode="utc"
+                        role="radio"
+                        aria-checked="false"
+                    >
+                        UTC
+                    </button>
+                    </div>
                 </div>
             </div>
         </section>
